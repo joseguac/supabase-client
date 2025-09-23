@@ -4,35 +4,12 @@ Main entry point for the Supabase seeding application
 This script orchestrates the database seeding process.
 """
 
-import json
-import os
 import sys
 from pathlib import Path
 from src.supa.seed_database import run_seeding
-
-# Add the src directory to the Python path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+from src.utils.json_io import load_json_file
 
 
-def load_json_file(file_path: Path) -> list:
-    """
-    Load and parse a JSON file.
-    
-    Args:
-        file_path: Path to the JSON file
-        
-    Returns:
-        Parsed JSON data as a list
-        
-    Raises:
-        FileNotFoundError: If the file doesn't exist
-        json.JSONDecodeError: If the file contains invalid JSON
-    """
-    if not file_path.exists():
-        raise FileNotFoundError(f"JSON file not found: {file_path}")
-    
-    with open(file_path, 'r', encoding='utf-8') as file:
-        return json.load(file)
 
 
 def main():
@@ -85,10 +62,6 @@ def main():
         print(f"[ERROR] File not found: {e}")
         sys.exit(1)
         
-    except json.JSONDecodeError as e:
-        print(f"[ERROR] Invalid JSON format: {e}")
-        sys.exit(1)
-        
     except ImportError as e:
         print(f"[ERROR] Import error: {e}")
         print("Make sure all required packages are installed:")
@@ -96,9 +69,12 @@ def main():
         sys.exit(1)
         
     except Exception as e:
-        print(f"[ERROR] Unexpected error: {e}")
-        import traceback
-        traceback.print_exc()
+        if "JSONDecodeError" in str(type(e)):
+            print(f"[ERROR] Invalid JSON format: {e}")
+        else:
+            print(f"[ERROR] Unexpected error: {e}")
+            import traceback
+            traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
