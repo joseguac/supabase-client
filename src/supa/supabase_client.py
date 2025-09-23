@@ -90,44 +90,27 @@ class SupabaseClient:
         except Exception as e:
             print(f"Warning: Error clearing tables: {e}")
     
-    def insert_categories(self, categories: list) -> Optional[list]:
+    def insert_data(self, table_name: str, data: list, description: Optional[str] = None) -> Optional[list]:
         """
-        Insert categories into the database.
+        Generic function to insert data into any table.
         
         Args:
-            categories: List of category dictionaries to insert
+            table_name: Name of the table to insert into
+            data: List of dictionaries to insert
+            description: Optional description for logging (defaults to table_name)
             
         Returns:
-            List of inserted category data or None if failed
+            List of inserted data or None if failed
         """
-        print("\nSeeding categories...")
+        description = description or table_name
+        print(f"\nSeeding {description}...")
         try:
             client = self.get_client()
-            result = client.table('categories').insert(categories).execute()
-            print(f"[SUCCESS] Inserted {len(categories)} categories")
+            result = client.table(table_name).insert(data).execute()
+            print(f"[SUCCESS] Inserted {len(data)} {description}")
             return result.data
         except Exception as e:
-            print(f"Error seeding categories: {e}")
-            return None
-    
-    def insert_menu_items(self, menu_items: list) -> Optional[list]:
-        """
-        Insert menu items into the database.
-        
-        Args:
-            menu_items: List of menu item dictionaries to insert
-            
-        Returns:
-            List of inserted menu item data or None if failed
-        """
-        print("\nSeeding menu items...")
-        try:
-            client = self.get_client()
-            result = client.table('menu_items').insert(menu_items).execute()
-            print(f"[SUCCESS] Inserted {len(menu_items)} menu items")
-            return result.data
-        except Exception as e:
-            print(f"Error seeding menu items: {e}")
+            print(f"Error seeding {description}: {e}")
             return None
     
     def verify_data(self) -> None:

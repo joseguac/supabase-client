@@ -4,6 +4,7 @@ Main entry point for the Supabase seeding application
 This script orchestrates the database seeding process.
 """
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -11,6 +12,27 @@ from src.supa.seed_database import run_seeding
 
 # Add the src directory to the Python path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
+
+
+def load_json_file(file_path: Path) -> list:
+    """
+    Load and parse a JSON file.
+    
+    Args:
+        file_path: Path to the JSON file
+        
+    Returns:
+        Parsed JSON data as a list
+        
+    Raises:
+        FileNotFoundError: If the file doesn't exist
+        json.JSONDecodeError: If the file contains invalid JSON
+    """
+    if not file_path.exists():
+        raise FileNotFoundError(f"JSON file not found: {file_path}")
+    
+    with open(file_path, 'r', encoding='utf-8') as file:
+        return json.load(file)
 
 
 def main():
@@ -29,8 +51,43 @@ def main():
         sys.exit(1)
     
     try:
-        # Run the seeding function
-        run_seeding()
+        # Define data directory and JSON files
+        data_dir = Path(__file__).parent / "data"
+        categories_file = data_dir / "categories.json"
+        menu_items_file = data_dir / "menu_items.json"
+        
+        # Load JSON data
+        print("\nLoading JSON data files...")
+        categories_data = load_json_file(categories_file)
+        menu_items_data = load_json_file(menu_items_file)
+        
+        print(f"[SUCCESS] Loaded {len(categories_data)} categories")
+        print(f"[SUCCESS] Loaded {len(menu_items_data)} menu items")
+        
+        # Prepare data sets for seeding
+        data_sets = [
+            {
+                'table_name': 'categories',
+                'data': categories_data,
+                'description': 'categories'
+            },
+            {
+                'table_name': 'menu_items',
+                'data': menu_items_data,
+                'description': 'menu items'
+            }
+        ]
+        
+        # Run the seeding function with loaded data
+        run_seeding(data_sets, verify_data=True, clear_existing=True)
+        
+    except FileNotFoundError as e:
+        print(f"[ERROR] File not found: {e}")
+        sys.exit(1)
+        
+    except json.JSONDecodeError as e:
+        print(f"[ERROR] Invalid JSON format: {e}")
+        sys.exit(1)
         
     except ImportError as e:
         print(f"[ERROR] Import error: {e}")
