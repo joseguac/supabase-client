@@ -6,9 +6,11 @@ This module provides a generic seeding function that accepts JSON data and table
 
 from typing import Dict, List, Any, Optional
 from .supabase_client import SupabaseClient
+from ..config.constants import MESSAGES, DEFAULTS
+from ..config.loader import ConfigLoader
 
 
-def run_seeding(data_sets: List[Dict[str, Any]], verify_data: bool = True, clear_existing: bool = True) -> None:
+def run_seeding(data_sets: List[Dict[str, Any]], verify_data: bool = True, clear_existing: bool = True, config_loader: Optional[ConfigLoader] = None) -> None:
     """
     Generic seeding function that accepts loaded JSON data and uploads to database.
     
@@ -19,6 +21,7 @@ def run_seeding(data_sets: List[Dict[str, Any]], verify_data: bool = True, clear
             - 'description': Optional description for logging
         verify_data: Whether to verify the data after insertion
         clear_existing: Whether to clear existing data before seeding
+        config_loader: Optional configuration loader instance
     
     Example:
         data_sets = [
@@ -35,22 +38,25 @@ def run_seeding(data_sets: List[Dict[str, Any]], verify_data: bool = True, clear
         ]
         run_seeding(data_sets)
     """
-    print("\n" + "=" * 50)
-    print("Starting Database Seeding Process")
-    print("=" * 50)
+    separator = MESSAGES['SEPARATOR']
+    print(f"\n{separator}")
+    print(MESSAGES['SEEDING_TITLE'])
+    print(separator)
     
-    # Initialize Supabase client
-    supabase_client = SupabaseClient()
+    # Initialize Supabase client with optional config loader
+    supabase_client = SupabaseClient(config_loader=config_loader)
     
     # Test connection first
-    print("\nTesting Supabase connection...")
+    print(f"\n{MESSAGES['CONNECTION_TEST']}")
     if not supabase_client.test_connection():
-        print("[ERROR] Failed to connect to Supabase. Aborting seeding process.")
+        print(f"{MESSAGES['ERROR_PREFIX']} {MESSAGES['ERROR_CONNECTION']}")
         return
     
     # Clear existing data if requested
     if clear_existing:
-        supabase_client.clear_tables()
+        # Extract table names from data sets
+        table_names = [data_set['table_name'] for data_set in data_sets]
+        supabase_client.clear_tables(table_names=table_names)
     
     # Process each data set
     success_count = 0
@@ -68,19 +74,23 @@ def run_seeding(data_sets: List[Dict[str, Any]], verify_data: bool = True, clear
             success_count += 1
             total_records += len(data)
         else:
-            print(f"[ERROR] Failed to seed {description}")
+            print(f"{MESSAGES['ERROR_PREFIX']} Failed to seed {description}")
     
     # Summary
-    print("\n" + "=" * 50)
-    print(f"Seeding Summary: {success_count}/{len(data_sets)} tables seeded successfully")
-    print(f"Total records inserted: {total_records}")
-    print("=" * 50)
+    separator = MESSAGES['SEPARATOR']
+    print(f"\n{separator}")
+    print(MESSAGES['SEEDING_SUMMARY'].format(success=success_count, total=len(data_sets)))
+    print(MESSAGES['TOTAL_RECORDS'].format(count=total_records))
+    print(separator)
     
     # Verify data if requested
     if verify_data and success_count > 0:
-        supabase_client.verify_data()
+        # Extract table names from successfully seeded data sets
+        verified_table_names = [data_set['table_name'] for data_set in data_sets]
+        supabase_client.verify_data(table_names=verified_table_names)
     
     if success_count == len(data_sets):
-        print("\n[SUCCESS] Database seeding completed successfully!")
+        print(f"\n{MESSAGES['SUCCESS_PREFIX']} {MESSAGES['SEEDING_COMPLETED']}")
     else:
-        print(f"\n[WARNING] {len(data_sets) - success_count} table(s) failed to seed")
+        failed_count = len(data_sets) - success_count
+        print(f"\n{MESSAGES['WARNING_PREFIX']} {MESSAGES['SEEDING_FAILED'].format(count=failed_count)}")
