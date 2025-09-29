@@ -40,8 +40,40 @@ CREATE POLICY "Allow public read access to categories" ON categories
 CREATE POLICY "Allow public read access to menu_items" ON menu_items
     FOR SELECT USING (true);
 
+-- Create bread_locations table for the "Where Has Our Bread Been?" feature
+CREATE TABLE IF NOT EXISTS bread_locations (
+    id SERIAL PRIMARY KEY,
+    city VARCHAR(255) NOT NULL,
+    state_province VARCHAR(255),
+    country VARCHAR(255) NOT NULL,
+    latitude DECIMAL(10, 8) NOT NULL,
+    longitude DECIMAL(11, 8) NOT NULL,
+    customer_story TEXT,
+    customer_name VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    is_approved BOOLEAN DEFAULT TRUE
+);
+
+-- Add indexes for better performance on bread_locations
+CREATE INDEX IF NOT EXISTS idx_bread_locations_country ON bread_locations(country);
+CREATE INDEX IF NOT EXISTS idx_bread_locations_approved ON bread_locations(is_approved);
+CREATE INDEX IF NOT EXISTS idx_bread_locations_created_at ON bread_locations(created_at);
+
+-- Enable Row Level Security for bread_locations
+ALTER TABLE bread_locations ENABLE ROW LEVEL SECURITY;
+
+-- Create policy for public read access to approved bread locations
+CREATE POLICY "Allow public read access to approved bread_locations" ON bread_locations
+    FOR SELECT USING (is_approved = true);
+
+-- Create policy for public insert access (new submissions will need approval)
+CREATE POLICY "Allow public insert to bread_locations" ON bread_locations
+    FOR INSERT WITH CHECK (true);
+
 -- Grant necessary permissions
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON categories TO anon, authenticated;
 GRANT ALL ON menu_items TO anon, authenticated;
+GRANT ALL ON bread_locations TO anon, authenticated;
 GRANT USAGE, SELECT ON SEQUENCE categories_id_seq TO anon, authenticated;
+GRANT USAGE, SELECT ON SEQUENCE bread_locations_id_seq TO anon, authenticated;

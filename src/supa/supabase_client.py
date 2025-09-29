@@ -41,14 +41,14 @@ class SupabaseClient:
                     # Fallback to direct environment loading
                     load_dotenv()
                     supabase_url = supabase_url or os.getenv('SUPABASE_URL')
-                    supabase_key = supabase_key or os.getenv('API_Key')
+                    supabase_key = supabase_key or os.getenv('API_KEY')
             else:
                 load_dotenv()
                 supabase_url = supabase_url or os.getenv('SUPABASE_URL')
-                supabase_key = supabase_key or os.getenv('API_Key')
+                supabase_key = supabase_key or os.getenv('API_KEY')
         
         if not supabase_url or not supabase_key:
-            raise ValueError("SUPABASE_URL and API_Key must be provided or available in environment variables")
+            raise ValueError("SUPABASE_URL and API_KEY must be provided or available in environment variables")
         
         self.supabase_url = supabase_url
         self.supabase_key = supabase_key
